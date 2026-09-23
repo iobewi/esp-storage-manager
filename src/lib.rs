@@ -205,6 +205,34 @@ impl StorageManager {
         };
         nvs.keys().filter_map(Result::ok).collect()
     }
+    /// Returns every string-valued entry in `namespace` that can be decoded.
+    ///
+    /// Per-entry decode/read errors are skipped, matching `esp_nvs::Nvs`
+    /// enumeration semantics; infrastructure-level reads through `get_*`
+    /// remain the API that updates the manager health flag on failure.
+    pub fn string_entries(&mut self, namespace: &Key) -> Vec<(Key, String)> {
+        let Some(nvs) = self.nvs() else {
+            return Vec::new();
+        };
+        let keys: Vec<Key> = nvs
+            .keys()
+            .filter_map(Result::ok)
+            .filter_map(|(entry_namespace, key)| {
+                (entry_namespace.as_str() == namespace.as_str()).then_some(key)
+            })
+            .collect();
+
+        let mut out = Vec::new();
+        let Some(nvs) = self.nvs.as_mut() else {
+            return out;
+        };
+        for key in keys {
+            if let Ok(value) = nvs.get::<String>(namespace, &key) {
+                out.push((key, value));
+            }
+        }
+        out
+    }
 
     /// Deletes a key. Missing namespaces/keys are treated as success.
     pub fn delete(&mut self, namespace: &Key, key: &Key) -> Result<(), StorageError> {
