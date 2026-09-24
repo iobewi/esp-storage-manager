@@ -22,7 +22,7 @@ use embedded_storage::nor_flash::{ErrorType, MultiwriteNorFlash, NorFlash, ReadN
 use esp_hal::peripherals::FLASH;
 use esp_nvs::error::Error as NvsError;
 use esp_nvs::platform::Crc;
-use esp_nvs::{Get, Nvs, Set};
+use esp_nvs::{Get, Nvs, NvsStatistics, Set};
 use log::warn;
 use static_cell::StaticCell;
 
@@ -164,6 +164,39 @@ impl StorageManager {
 
     pub fn set_string(&mut self, namespace: &Key, key: &Key, value: &str) -> Result<(), StorageError> {
         self.set(namespace, key, value)
+    }
+
+    /// Reads an opaque NVS blob.
+    pub fn get_blob(&mut self, namespace: &Key, key: &Key) -> Option<Vec<u8>> {
+        self.get(namespace, key)
+    }
+
+    /// Replaces an opaque NVS blob.
+    ///
+    /// esp-nvs writes the new blob version before retiring the old one, so
+    /// callers can treat one blob key as the persistence unit for a complete
+    /// component configuration instead of reimplementing multi-key staging.
+    pub fn set_blob(&mut self, namespace: &Key, key: &Key, value: &[u8]) -> Result<(), StorageError> {
+        self.set(namespace, key, value)
+    }
+
+    /// Current NVS page/entry accounting for capacity planning.
+    pub fn nvs_statistics(&mut self) -> Option<NvsStatistics> {
+        let nvs = self.nvs()?;
+        match nvs.statistics() {
+            Ok(stats) => Some(stats),
+            Err(e) => {
+                warn!("Failed to read NVS statistics: {e:?}");
+                self.nvs = None;
+                self.healthy = false;
+                None
+            }
+        }
+    }
+
+    /// Physical NVS partition configured for this manager.
+    pub const fn nvs_partition(&self) -> NvsPartition {
+        self.partition
     }
 
     pub fn get_u8(&mut self, namespace: &Key, key: &Key) -> Option<u8> {
