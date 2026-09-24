@@ -22,11 +22,11 @@ use embedded_storage::nor_flash::{ErrorType, MultiwriteNorFlash, NorFlash, ReadN
 use esp_hal::peripherals::FLASH;
 use esp_nvs::error::Error as NvsError;
 use esp_nvs::platform::Crc;
-use esp_nvs::{Get, Nvs, NvsStatistics, Set};
+use esp_nvs::{Get, Nvs, Set};
 use log::warn;
 use static_cell::StaticCell;
 
-pub use esp_nvs::Key;
+pub use esp_nvs::{ENTRIES_PER_PAGE, FLASH_SECTOR_SIZE, ITEM_SIZE, MAX_BLOB_DATA_PER_PAGE, Key, NvsStatistics};
 pub use esp_storage::FlashStorage;
 
 /// The flash range containing one ESP-IDF-compatible NVS partition.
