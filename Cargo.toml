@@ -10,6 +10,10 @@ readme = "README.md"
 keywords = ["esp32", "flash", "nvs", "embedded", "no-std"]
 categories = ["embedded", "hardware-support", "no-std"]
 
+[workspace]
+members = [".", "config-space-backend"]
+resolver = "3"
+
 [features]
 default = []
 esp32c3 = ["esp-hal/esp32c3", "esp-storage/esp32c3", "esp-nvs/esp32c3"]

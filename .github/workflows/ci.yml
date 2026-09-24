@@ -14,5 +14,7 @@ jobs:
           toolchain: "1.88.0"
           targets: riscv32imc-unknown-none-elf
           components: clippy
-      - run: cargo check --features esp32c3 --target riscv32imc-unknown-none-elf
-      - run: cargo clippy --features esp32c3 --target riscv32imc-unknown-none-elf -- -D warnings
+      - run: cargo check -p esp-storage-manager --features esp32c3 --target riscv32imc-unknown-none-elf
+      - run: cargo clippy -p esp-storage-manager --features esp32c3 --target riscv32imc-unknown-none-elf -- -D warnings
+      - run: cargo check -p esp-config-space-backend --features esp32c3 --target riscv32imc-unknown-none-elf
+      - run: cargo clippy -p esp-config-space-backend --features esp32c3 --target riscv32imc-unknown-none-elf -- -D warnings
