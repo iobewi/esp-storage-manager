@@ -166,9 +166,20 @@ impl StorageManager {
         self.set(namespace, key, value)
     }
 
-    /// Reads an opaque NVS blob.
-    pub fn get_blob(&mut self, namespace: &Key, key: &Key) -> Option<Vec<u8>> {
-        self.get(namespace, key)
+    /// Reads an opaque NVS blob without conflating "missing" with an NVS
+    /// infrastructure failure.
+    pub fn read_blob(&mut self, namespace: &Key, key: &Key) -> Result<Option<Vec<u8>>, StorageError> {
+        let nvs = self.nvs().ok_or(StorageError::Unavailable)?;
+        match nvs.get(namespace, key) {
+            Ok(value) => Ok(Some(value)),
+            Err(NvsError::NamespaceNotFound | NvsError::KeyNotFound) => Ok(None),
+            Err(e) => {
+                warn!("Failed to read blob {}: {e:?}", key.as_str());
+                self.nvs = None;
+                self.healthy = false;
+                Err(StorageError::Write)
+            }
+        }
     }
 
     /// Replaces an opaque NVS blob.
@@ -181,15 +192,15 @@ impl StorageManager {
     }
 
     /// Current NVS page/entry accounting for capacity planning.
-    pub fn nvs_statistics(&mut self) -> Option<NvsStatistics> {
-        let nvs = self.nvs()?;
+    pub fn nvs_statistics(&mut self) -> Result<NvsStatistics, StorageError> {
+        let nvs = self.nvs().ok_or(StorageError::Unavailable)?;
         match nvs.statistics() {
-            Ok(stats) => Some(stats),
+            Ok(stats) => Ok(stats),
             Err(e) => {
                 warn!("Failed to read NVS statistics: {e:?}");
                 self.nvs = None;
                 self.healthy = false;
-                None
+                Err(StorageError::Write)
             }
         }
     }
