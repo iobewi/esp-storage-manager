@@ -1,11 +1,16 @@
 #![no_std]
 
-//! Process-wide ownership and serialization of ESP flash access.
+//! Shared ESP storage hardware backend.
 //!
-//! This crate deliberately contains no NVS, keys, partitions, OTA policy,
-//! health state, or application persistence semantics. It exists only because
-//! esp_storage::FlashStorage::new() represents the physical flash device
-//! and may be constructed only once per firmware image.
+//! This crate owns the process-wide physical flash capability and exposes
+//! hardware-level adapters used by higher-level backends:
+//!
+//! - serialized access to the single `esp_storage::FlashStorage` instance;
+//! - the ESP NVS platform adapter over that shared flash;
+//! - ESP partition-table lookup and raw partition erase helpers.
+//!
+//! It deliberately contains no ConfigSpace framing, OTA transaction state,
+//! EWBT policy, deployment identity, or application persistence semantics.
 
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_sync::mutex::Mutex;
@@ -14,7 +19,10 @@ use esp_hal::peripherals::FLASH;
 use esp_storage::FlashStorage;
 use static_cell::StaticCell;
 
-/// The one process-wide flash capability shared by platform backends.
+pub mod nvs;
+pub mod partitions;
+
+/// The one process-wide flash capability shared by ESP platform backends.
 pub type SharedFlash = Mutex<CriticalSectionRawMutex, EspFlash>;
 
 /// Exclusive access to the physical ESP flash.
@@ -23,8 +31,8 @@ pub struct EspFlash {
 }
 
 impl EspFlash {
-    /// Access the underlying esp-storage driver while this capability is held
-    /// exclusively through SharedFlash.
+    /// Access the underlying ESP storage driver while the shared capability is
+    /// held exclusively by the caller.
     pub fn storage(&mut self) -> &mut FlashStorage<'static> {
         &mut self.storage
     }
