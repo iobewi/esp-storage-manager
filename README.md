@@ -1,24 +1,40 @@
-# esp-flash-access
+# esp-storage-manager
 
-Minimal process-wide ESP flash ownership for bare-metal Rust.
+Shared hardware storage backend for bare-metal ESP Rust firmware.
 
-The crate owns exactly one `esp_storage::FlashStorage` and serializes access
-through an Embassy mutex. It deliberately knows nothing about NVS, ConfigSpace,
-OTA state, keys, namespaces, partitions, or application health.
-
-Consumers lock the shared capability and apply their own backend semantics:
+The crate currently retains the package name `esp-flash-access` for compatibility,
+but its responsibility is broader than flash ownership alone: it centralizes the
+ESP-specific storage primitives shared by higher-level backends.
 
 ```text
-ESP FLASH
-   |
-esp-flash-access
-   |
-   +-- config-space-manager ESP/NVS backend
-   +-- FiBeWI ESP backend
+ESP hardware storage
+        |
+esp-storage-manager
+├── flash ownership + serialization
+├── NVS platform adapter
+└── partition-table / raw erase helpers
+        |
+        +-----------------------------+
+        |                             |
+config-space-manager             FiBeWI
+ESP/NVS adapter                  ESP firmware adapter
 ```
 
-The GitHub repository retains its historical name for now; the Rust package is
-`esp-flash-access`.
+This crate owns **hardware mechanics only**. It deliberately knows nothing about:
+
+- ConfigSpace namespaces, quotas, generations or record framing;
+- FiBeWI transactions, staging, EWBT policy or rollback decisions;
+- HTTP, TLS, provisioning or application health.
+
+Higher-level repositories keep those semantics and consume this crate as their
+common ESP hardware layer.
+
+## Chip features
+
+- `esp32c3`
+- `esp32s3`
+
+No chip feature is enabled by default.
 
 ## License
 
